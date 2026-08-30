@@ -41,7 +41,7 @@ jobs:
         uses: peaceiris/actions-gh-pages@v4
         with:
           deploy_key: ${{ secrets.GH_PAGES_DEPLOY_KEY }}
-          external_repository: 805889095-eng/9router-plus-docs
+          external_repository: 9router/9router.github.io
           publish_branch: main
           publish_dir: gitbook/out
           force_orphan: true

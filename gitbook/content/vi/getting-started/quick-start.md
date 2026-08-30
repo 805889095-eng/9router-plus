@@ -243,5 +243,5 @@ Daily routine:
 ## Cần trợ giúp?
 
 - **Website**: [9router.com](https://9router.com)
-- **GitHub**: [github.com/805889095-eng/9router-plus](https://github.com/805889095-eng/9router-plus)
-- **Issues**: [github.com/805889095-eng/9router-plus/issues](https://github.com/805889095-eng/9router-plus/issues)
+- **GitHub**: [github.com/decolua/9router](https://github.com/decolua/9router)
+- **Issues**: [github.com/decolua/9router/issues](https://github.com/decolua/9router/issues)

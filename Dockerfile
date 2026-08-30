@@ -18,7 +18,7 @@ RUN npm run build
 FROM ${NODE_IMAGE} AS runner
 WORKDIR /app
 
-LABEL org.opencontainers.image.title="9router-plus"
+LABEL org.opencontainers.image.title="9router"
 
 ENV NODE_ENV=production
 ENV PORT=20128

@@ -346,6 +346,6 @@ Common issues and solutions when using 9Router.
 
 ## Need More Help?
 
-- **GitHub Issues:** [github.com/805889095-eng/9router-plus/issues](https://github.com/805889095-eng/9router-plus/issues)
+- **GitHub Issues:** [github.com/decolua/9router/issues](https://github.com/decolua/9router/issues)
 - **Documentation:** [9router.com/docs](https://9router.com/docs)
 - **FAQ:** [faq.md](faq.md)

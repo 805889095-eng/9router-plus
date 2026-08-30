@@ -452,7 +452,7 @@
     },
     "format": "openai",
     "clientId": "10009311001",
-    "clientSecret": "4Z3YjXycVsQvyGF1etiNlIBB4RsqSDtW",
+    "clientSecret": "CHANGE_ME_iflow_client_secret",
     "tokenUrl": "https://iflow.cn/oauth/token"
   },
   "kilocode": {

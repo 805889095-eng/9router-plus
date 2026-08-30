@@ -39,7 +39,7 @@ export default {
   ],
   oauth: {
     clientId: "10009311001",
-    clientSecret: "4Z3YjXycVsQvyGF1etiNlIBB4RsqSDtW",
+    clientSecret: "CHANGE_ME_iflow_client_secret",
     authorizeUrl: "https://iflow.cn/oauth",
     tokenUrl: "https://iflow.cn/oauth/token",
     userInfoUrl: "https://iflow.cn/api/oauth/getUserInfo",
