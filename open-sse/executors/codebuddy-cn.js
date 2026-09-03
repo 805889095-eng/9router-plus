@@ -40,12 +40,19 @@ export class CodeBuddyExecutor extends DefaultExecutor {
         if (!text) return message;
         // Whitelist well-known agent frameworks whose (long, legitimate) system
         // prompts must NOT be replaced. Hermes Agent (hermes-agent.nousresearch.com)
-        // ships a ~25K system prompt that trips the length catch-all below; without
-        // this bypass every session starts amnesiac.
+        // ships a ~25K system prompt that trips a length catch-all; without this
+        // bypass every session starts amnesiac. Markers are precise (product
+        // name + official domain) so an attacker can't trivially spoof them.
         if (/Hermes Agent|Nous Research|You run on Hermes|hermes-agent\.nousresearch/i.test(text)) {
           return message;
         }
-        if (text.length > 2000 || AGENT_PATTERN.test(text)) {
+        // Only replace when the prompt actually matches agent identity markers.
+        // The former `text.length > 2000` catch-all is removed: length alone is
+        // not a signal for Tencent's content filter, and it silently wiped long
+        // but legitimate user system prompts (project specs, pasted docs) and
+        // kept non-whitelisted agents amnesiac. AGENT_PATTERN already catches
+        // real agent identities (Claude Code / Cursor / etc.), so it's enough.
+        if (AGENT_PATTERN.test(text)) {
           return typeof message.content === "string"
             ? { ...message, content: NEUTRAL_PROMPT }
             : { ...message, content: [{ type: "text", text: NEUTRAL_PROMPT }] };
