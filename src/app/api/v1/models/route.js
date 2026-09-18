@@ -47,6 +47,19 @@ const LIVE_MODEL_RESOLVERS = {
     if (!models.length) return null;
     return { models: models.map((m) => ({ id: m.id, name: m.name })) };
   },
+  "qoder-cn": async (conn) => {
+    const result = await resolveQoderModels({
+      accessToken: conn.accessToken,
+      apiKey: conn.apiKey,
+      refreshToken: conn.refreshToken,
+      email: conn.email,
+      displayName: conn.displayName,
+      providerSpecificData: conn.providerSpecificData || {}
+    });
+    const models = routableQoderModels(result);
+    if (!models.length) return null;
+    return { models: models.map((m) => ({ id: m.id, name: m.name })) };
+  },
   kimchi: async (conn) => {
     const result = await resolveKimchiModels({
       accessToken: conn.accessToken,

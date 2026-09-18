@@ -17,11 +17,25 @@ export const QODER_CHAT_BASE_ALT = "https://api2.qoder.sh";
 
 export const QODER_LOGIN_URL = "https://qoder.com/device/selectAccounts";
 
+// Qoder CN (China) endpoints
+export const QODER_CN_OPENAPI_BASE = "https://openapi.qoder.com.cn";
+export const QODER_CN_CHAT_BASE = "https://gateway.qoder.com.cn";
+export const QODER_CN_LOGIN_URL = "https://qoder.cn/device/selectAccounts";
+
 // Device flow endpoints
 export const QODER_DEVICE_TOKEN_URL = `${QODER_OPENAPI_BASE}/api/v1/deviceToken/poll`;
 export const QODER_USERINFO_URL = `${QODER_OPENAPI_BASE}/api/v1/userinfo`;
 export const QODER_QUOTA_USAGE_URL = `${QODER_OPENAPI_BASE}/api/v2/quota/usage`;
 export const QODER_REFRESH_TOKEN_URL = `${QODER_CENTER_BASE}/algo/api/v3/user/refresh_token`;
+
+// Qoder CN Device flow endpoints
+export const QODER_CN_DEVICE_TOKEN_URL = `${QODER_CN_OPENAPI_BASE}/api/v1/deviceToken/poll`;
+export const QODER_CN_USERINFO_URL = `${QODER_CN_OPENAPI_BASE}/api/v1/userinfo`;
+export const QODER_CN_QUOTA_USAGE_URL = `${QODER_CN_OPENAPI_BASE}/api/v2/quota/usage`;
+export const QODER_CN_JOB_TOKEN_EXCHANGE_URL = `${QODER_CN_OPENAPI_BASE}/api/v1/jobToken/exchange`;
+export const QODER_CN_CHAT_URL = `${QODER_CN_CHAT_BASE}/algo${QODER_CHAT_SIG_PATH}?FetchKeys=llm_model_result&AgentId=agent_common`;
+export const QODER_CN_CHAT_URL_ENCODED = `${QODER_CN_CHAT_URL}&Encode=1`;
+export const QODER_CN_MODEL_LIST_URL = `${QODER_CN_CHAT_BASE}/algo/api/v2/model/list`;
 
 // PAT (Personal Access Token, pt-...) → short-lived job token (jt-...) exchange.
 // PATs cannot sign COSY requests directly — they must be exchanged first.
