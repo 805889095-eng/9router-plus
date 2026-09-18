@@ -1,25 +1,79 @@
 <div align="center">
-  <img src="./images/9router.png?1" alt="9Router Dashboard" width="800"/>
+  <img src="./images/9router.png?1" alt="9Router Plus Dashboard" width="800"/>
   
-  # 9Router - FREE AI Router & Token Saver
+  # 9Router Plus
+  
+  **Enhanced fork of [9Router](https://github.com/decolua/9router) — with Hermes amnesia fix & security hardening.**
   
   **Never stop coding. Save 20-40% tokens with RTK + auto-fallback to FREE & cheap AI models.**
   
   **Connect All AI Code Tools (Claude Code, Cursor, Antigravity, Copilot, Codex, Gemini, OpenCode, Cline, OpenClaw...) to 40+ AI Providers & 100+ Models.**
   
-  [![npm](https://img.shields.io/npm/v/9router.svg)](https://www.npmjs.com/package/9router)
-  [![Downloads](https://img.shields.io/npm/dm/9router.svg)](https://www.npmjs.com/package/9router)
-  [![Docker Pulls](https://img.shields.io/docker/pulls/decolua/9router.svg?logo=docker&label=Docker%20pulls)](https://hub.docker.com/r/decolua/9router)
-  [![GHCR](https://img.shields.io/badge/GHCR-decolua%2F9router-blue?logo=github)](https://github.com/decolua/9router/pkgs/container/9router)
-  [![License](https://img.shields.io/npm/l/9router.svg)](https://github.com/decolua/9router/blob/main/LICENSE)
+  [![GHCR](https://img.shields.io/badge/GHCR-805889095--eng%2F9router--plus-blue?logo=github)](https://github.com/805889095-eng/9router-plus/pkgs/container/9router-plus)
+  [![Upstream](https://img.shields.io/badge/upstream-v0.5.75-green?logo=github)](https://github.com/decolua/9router)
+  [![License](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
-<a href="https://trendshift.io/repositories/22628" target="_blank"><img src="https://trendshift.io/api/badge/repositories/22628" alt="decolua%2F9router | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
+[🚀 Quick Start](#-quick-start) • [💡 Features](#-key-features) • [🔧 Differences from upstream](#-differences-from-upstream) • [🐳 Docker](#-docker-image)
 
-[🚀 Quick Start](#-quick-start) • [💡 Features](#-key-features) • [📖 Setup](#-setup-guide) • [🌐 Website](https://9router.com)
-
-[🇧🇷 Português (Brasil)](./i18n/README.pt-BR.md) • [🇻🇳 Tiếng Việt](./i18n/README.vi.md) • [🇨🇳 中文](./i18n/README.zh-CN.md) • [🇯🇵 日本語](./i18n/README.ja-JP.md) • [🇷🇺 Русский](./i18n/README.ru.md) • [🇹🇭 ไทย](./i18n/README.th.md) • [🇮🇷 فارسی](./i18n/README.fa_IR.md) • [🇮🇩 Indonesia](./i18n/README.id-ID.md) • [🇪🇸 Español](./i18n/README.es.md) • [🇫🇷 Français](./i18n/README.fr.md)
+[🇨🇳 中文](./README.zh-CN.md)
 
 </div>
+
+---
+
+## 🔧 Differences from upstream
+
+This fork tracks [decolua/9router](https://github.com/decolua/9router) and carries a small set of patches that are **not** upstream. Everything else is unchanged, so upstream docs still apply.
+
+### 1. Hermes amnesia fix (the main one)
+
+**Problem.** Tencent's CodeBuddy (`codebuddy-cn` provider) content filter flags CLI-agent system prompts as prompt injection and rejects the whole request. 9Router defends by replacing suspected agent prompts with a neutral one — but the original heuristic included a catch-all `text.length > 2000`, which meant **any long system prompt got silently wiped**, no matter what it was.
+
+**Impact.** Every agent shipping a large system prompt started each session amnesiac. [Hermes Agent](https://hermes-agent.nousresearch.com) (~25K prompt) lost its entire identity, persona and instructions on every single request.
+
+**Fix** (`open-sse/executors/codebuddy-cn.js`):
+- **Removed** the `text.length > 2000` catch-all — length alone is not a signal for the content filter.
+- **Added** an explicit Hermes allowlist so that prompt is never touched:
+  ```js
+  if (/Hermes Agent|Nous Research|You run on Hermes|hermes-agent\.nousresearch/i.test(text)) {
+    return message;   // whitelisted — pass through untouched
+  }
+  ```
+- Replacement now happens **only** when `AGENT_PATTERN` matches a real agent identity (Claude Code / Cursor / Cline / aider / …), so genuine user prompts (project specs, pasted docs) survive.
+
+Markers are precise (product name **+** official domain), so they can't be trivially spoofed.
+
+### 2. Secret redaction in logs
+
+API keys, tokens and credentials are redacted before being written to request logs and the usage UI.
+
+### 3. CI: build to GHCR
+
+`.github/workflows/docker-publish.yml` publishes multi-arch images (amd64 + arm64) to GHCR on every push to `master` and on `v*` tags — no external registry secrets required.
+
+## 🐳 Docker image
+
+```bash
+docker pull ghcr.io/805889095-eng/9router-plus:latest
+
+docker run -d --name 9router --restart unless-stopped \
+  -p 20128:20128 \
+  -e INITIAL_PASSWORD=<your-password> \
+  -e NODE_ENV=production -e PORT=20128 -e HOSTNAME=0.0.0.0 -e DATA_DIR=/app/data \
+  -v 9router-data:/app/data -v 9router-data-home:/app/data-home \
+  ghcr.io/805889095-eng/9router-plus:latest
+```
+
+> Registry is public — anonymous pulls work.
+
+## 🔄 Syncing with upstream
+
+```bash
+git remote add upstream https://github.com/decolua/9router.git
+git fetch upstream
+git rebase upstream/master     # local patch commits are replayed on top
+git push origin master         # CI rebuilds and publishes the image
+```
 
 ---
 

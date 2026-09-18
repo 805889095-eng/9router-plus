@@ -1,23 +1,79 @@
 
 <div align="center">
-  <img src="./images/9router.png?1" alt="9Router Dashboard" width="800"/>
+  <img src="./images/9router.png?1" alt="9Router Plus 面板" width="800"/>
   
-  # 9Router - 免费 AI 路由器与 Token 节省器
+  # 9Router Plus
+  
+  **[9Router](https://github.com/decolua/9router) 的增强分支 —— 含 Hermes 失忆修复与安全加固。**
   
   **编程永不停歇。使用 RTK + 自动切换到免费/低价 AI 模型，节省 20-40% 的 tokens。**
   
   **将所有 AI 编程工具（Claude Code、Cursor、Antigravity、Copilot、Codex、Gemini、OpenCode、Cline、OpenClaw...）连接到 40+ AI 提供商和 100+ 模型。**
   
-  [![npm](https://img.shields.io/npm/v/9router.svg)](https://www.npmjs.com/package/9router)
-  [![Downloads](https://img.shields.io/npm/dm/9router.svg)](https://www.npmjs.com/package/9router)
-  [![License](https://img.shields.io/npm/l/9router.svg)](https://github.com/decolua/9router/blob/main/LICENSE)
+  [![GHCR](https://img.shields.io/badge/GHCR-805889095--eng%2F9router--plus-blue?logo=github)](https://github.com/805889095-eng/9router-plus/pkgs/container/9router-plus)
+  [![上游](https://img.shields.io/badge/upstream-v0.5.75-green?logo=github)](https://github.com/decolua/9router)
+  [![License](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
-  <a href="https://trendshift.io/repositories/22628" target="_blank"><img src="https://trendshift.io/api/badge/repositories/22628" alt="decolua%2F9router | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
-  
-  [🚀 快速开始](#-快速开始) • [💡 功能特点](#-主要功能) • [📖 设置指南](#-设置指南) • [🌐 网站](https://9router.com)
+  [🚀 快速开始](#-快速开始) • [💡 功能特点](#-主要功能) • [🔧 与上游的差异](#-与上游的差异) • [🐳 Docker 镜像](#-docker-镜像)
 
-  [🇻🇳 Tiếng Việt](./i18n/README.vi.md) • [🇨🇳 中文](./i18n/README.zh-CN.md) • [🇯🇵 日本語](./i18n/README.ja-JP.md)
+  [🇬🇧 English](./README.md)
 </div>
+
+---
+
+## 🔧 与上游的差异
+
+本分支跟随 [decolua/9router](https://github.com/decolua/9router)，只带了一小撮**上游没有**的补丁。其余部分未改动，上游文档依然适用。
+
+### 1. Hermes 失忆修复（主要的一项）
+
+**问题。** 腾讯 CodeBuddy（`codebuddy-cn` 提供商）的内容过滤器会把 CLI 智能体的系统提示词判为「提示注入」并拒绝整个请求。9Router 的防御手段是把疑似智能体的提示词替换成中性提示词 —— 但原始启发式里带了一条 `text.length > 2000` 的兜底规则，意味着**任何超长的系统提示词都会被静默抹掉**，不管它是什么内容。
+
+**后果。** 凡是携带大段系统提示词的智能体，每次会话都从失忆状态开始。[Hermes Agent](https://hermes-agent.nousresearch.com)（约 25K 提示词）在每一次请求中都丢失了完整的身份、人设与指令。
+
+**修复**（`open-sse/executors/codebuddy-cn.js`）：
+- **移除** `text.length > 2000` 兜底规则 —— 长度本身不是内容过滤器的判定信号。
+- **新增** Hermes 白名单，该提示词永不被动：
+  ```js
+  if (/Hermes Agent|Nous Research|You run on Hermes|hermes-agent\.nousresearch/i.test(text)) {
+    return message;   // 白名单 —— 原样放行
+  }
+  ```
+- 现在**仅当** `AGENT_PATTERN` 命中真实智能体身份（Claude Code / Cursor / Cline / aider 等）时才替换，因此正常用户的提示词（项目规格、粘贴的文档）得以保留。
+
+匹配标记是精准的（产品名 **+** 官方域名），无法被轻易伪造。
+
+### 2. 日志中的密钥脱敏
+
+API key、token 与凭据在写入请求日志和用量界面之前会被脱敏。
+
+### 3. CI：构建到 GHCR
+
+`.github/workflows/docker-publish.yml` 会在每次推送到 `master` 及打 `v*` 标签时，向 GHCR 发布多架构镜像（amd64 + arm64）—— 无需任何外部仓库密钥。
+
+## 🐳 Docker 镜像
+
+```bash
+docker pull ghcr.io/805889095-eng/9router-plus:latest
+
+docker run -d --name 9router --restart unless-stopped \
+  -p 20128:20128 \
+  -e INITIAL_PASSWORD=<你的密码> \
+  -e NODE_ENV=production -e PORT=20128 -e HOSTNAME=0.0.0.0 -e DATA_DIR=/app/data \
+  -v 9router-data:/app/data -v 9router-data-home:/app/data-home \
+  ghcr.io/805889095-eng/9router-plus:latest
+```
+
+> 仓库为公开，匿名拉取即可。
+
+## 🔄 与上游同步
+
+```bash
+git remote add upstream https://github.com/decolua/9router.git
+git fetch upstream
+git rebase upstream/master     # 本地补丁提交会被重放到最新上游之上
+git push origin master         # CI 自动重建并发布镜像
+```
 
 ---
 
