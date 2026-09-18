@@ -2,13 +2,15 @@ name: Build and Push Docker Image
 
 on:
   push:
+    branches:
+      - master
     tags:
       - "v*"
   workflow_dispatch:
 
 env:
+  # 只推自己的 GHCR（用自带 GITHUB_TOKEN，无需配置任何 secret）
   GHCR_IMAGE: ghcr.io/${{ github.repository }}
-  DOCKERHUB_IMAGE: decolua/9router
 
 jobs:
   build-and-push:
@@ -29,22 +31,15 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: |
-            ${{ env.GHCR_IMAGE }}
-            ${{ env.DOCKERHUB_IMAGE }}
+          images: ${{ env.GHCR_IMAGE }}
           tags: |
-            type=semver,pattern={{version}}
             type=raw,value=latest,enable={{is_default_branch}}
+            type=semver,pattern={{version}}
+            type=sha,prefix=sha-,format=short
 
       - name: Build and push
         uses: docker/build-push-action@v6
