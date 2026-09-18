@@ -90,10 +90,11 @@ export class QoderCnService extends QoderService {
   async fetchUserInfo(accessToken) {
     if (!accessToken) return { name: "", email: "", organizationId: "" };
     try {
+      const authHeaderVal = "Bearer " + accessToken;
       const response = await fetchWithTimeout(QODER_CN_USERINFO_URL, {
         method: "GET",
         headers: {
-          Authorization: *** ${accessToken}`,
+          Authorization: authHeaderVal,
           Accept: "application/json",
           "User-Agent": "Go-http-client/2.0",
         },
