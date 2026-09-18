@@ -33,6 +33,7 @@ const LIVE_MODEL_RESOLVERS = {
   },
   qoder: async (conn) => {
     const result = await resolveQoderModels({
+      provider: "qoder",
       accessToken: conn.accessToken,
       // PAT (pt-...) connections keep the token in apiKey; without it the live
       // catalog silently fails and /v1/models falls back to the static list.
@@ -49,6 +50,7 @@ const LIVE_MODEL_RESOLVERS = {
   },
   "qoder-cn": async (conn) => {
     const result = await resolveQoderModels({
+      provider: "qoder-cn",
       accessToken: conn.accessToken,
       apiKey: conn.apiKey,
       refreshToken: conn.refreshToken,

@@ -23,10 +23,7 @@ import { createHash } from "crypto";
 import { proxyAwareFetch } from "../utils/proxyFetch.js";
 import { buildCosyHeaders } from "../shared/qoder/cosy.js";
 import {
-  QODER_MODEL_LIST_URL,
-  QODER_CHAT_BASE_ALT,
-  QODER_JOB_TOKEN_EXCHANGE_URL,
-  QODER_USERINFO_URL,
+  qoderEndpoints,
   QODER_IDE_VERSION,
   QODER_CLIENT_TYPE,
 } from "../shared/qoder/constants.js";
@@ -40,6 +37,24 @@ const PAT_PREFIX = "pt-";
 // PAT and re-exchange once it is within 5 minutes of expiry.
 const PAT_REFRESH_BUFFER_MS = 5 * 60 * 1000;
 const PAT_DEFAULT_TTL_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Every connection carries the provider id it came from; qoder-cn must talk to
+ * the China endpoints (openapi.qoder.com.cn / gateway.qoder.com.cn) while plain
+ * qoder stays on qoder.sh. Falls back to the international bundle when the id
+ * is absent (older callers that only passed credentials).
+ */
+function providerOf(credentials) {
+  // The chat path hands us the credentials object built by
+  // `getProviderCredentials()`, which does NOT carry a `provider` field — it
+  // only embeds the raw row as `_connection`. Both shapes are checked so the
+  // China endpoints are picked on every path (chat, /v1/models, dashboard
+  // fetch, connectivity probe) instead of silently falling back to qoder.sh.
+  const p = credentials?.provider
+    ?? credentials?._connection?.provider
+    ?? credentials?.providerId;
+  return p === "qoder-cn" ? "qoder-cn" : "qoder";
+}
 
 export function isQoderPat(token) {
   return typeof token === "string" && token.startsWith(PAT_PREFIX);
@@ -63,9 +78,9 @@ const inflight = new Map();
  * Exchange a Qoder PAT (pt-...) for a short-lived job token (jt-...).
  * This endpoint is plain JSON POST — NOT COSY-signed.
  */
-async function exchangeJobToken(pat, proxyOptions = null, signal = null) {
+async function exchangeJobToken(pat, provider, proxyOptions = null, signal = null) {
   const res = await proxyAwareFetch(
-    QODER_JOB_TOKEN_EXCHANGE_URL,
+    qoderEndpoints(provider).jobTokenExchangeUrl,
     {
       method: "POST",
       headers: {
@@ -101,10 +116,10 @@ async function exchangeJobToken(pat, proxyOptions = null, signal = null) {
  * Resolve the Qoder userId for a job token (needed for COSY signing).
  * Returns "" on any failure — callers fall back to the stored userId.
  */
-async function fetchUserIdForJobToken(jobToken, proxyOptions = null, signal = null) {
+async function fetchUserIdForJobToken(jobToken, provider, proxyOptions = null, signal = null) {
   try {
     const res = await proxyAwareFetch(
-      QODER_USERINFO_URL,
+      qoderEndpoints(provider).userInfoUrl,
       {
         method: "GET",
         headers: {
@@ -127,14 +142,17 @@ async function fetchUserIdForJobToken(jobToken, proxyOptions = null, signal = nu
 /**
  * Resolve a PAT to a job-token credential, cached per-PAT.
  */
-async function resolvePatCredential(pat, proxyOptions = null, signal = null) {
-  const cached = patJobCache.get(pat);
+async function resolvePatCredential(pat, provider, proxyOptions = null, signal = null) {
+  // Cache per PAT *and* provider — the same PAT string means different things
+  // on the two deployments, and their job tokens are not interchangeable.
+  const cacheKey = `${provider}:${pat}`;
+  const cached = patJobCache.get(cacheKey);
   if (cached && cached.expiresAt - Date.now() > PAT_REFRESH_BUFFER_MS) return cached;
 
-  const { jobToken, expiresAt } = await exchangeJobToken(pat, proxyOptions, signal);
-  const userId = await fetchUserIdForJobToken(jobToken, proxyOptions, signal);
+  const { jobToken, expiresAt } = await exchangeJobToken(pat, provider, proxyOptions, signal);
+  const userId = await fetchUserIdForJobToken(jobToken, provider, proxyOptions, signal);
   const resolved = { accessToken: jobToken, userId, expiresAt };
-  patJobCache.set(pat, resolved);
+  patJobCache.set(cacheKey, resolved);
   return resolved;
 }
 
@@ -146,7 +164,7 @@ async function resolvePatCredential(pat, proxyOptions = null, signal = null) {
 export async function resolveQoderCredentials(credentials, proxyOptions = null, signal = null) {
   const raw = credentials?.apiKey || credentials?.accessToken;
   if (isQoderPat(raw)) {
-    const resolved = await resolvePatCredential(raw, proxyOptions, signal);
+    const resolved = await resolvePatCredential(raw, providerOf(credentials), proxyOptions, signal);
     return {
       ...credentials,
       accessToken: resolved.accessToken,
@@ -169,7 +187,10 @@ export async function resolveQoderCredentials(credentials, proxyOptions = null, 
 function cacheKey(credentials) {
   const psd = credentials?.providerSpecificData || {};
   const seed = psd.userId || credentials?.refreshToken || credentials?.accessToken || "anonymous";
-  return createHash("sha256").update(`qoder:${seed}`).digest("hex");
+  // Provider is part of the key: the same userId cannot belong to both
+  // deployments, but a missing/blank userId would otherwise collide and one
+  // deployment would serve the other's model catalog.
+  return createHash("sha256").update(`${providerOf(credentials)}:${seed}`).digest("hex");
 }
 
 /**
@@ -196,11 +217,13 @@ async function fetchQoderCatalogRaw(credentials, signal, proxyOptions = null) {
   const creds = cosyCredsFromConnection(credentials);
   if (!creds.userId || !creds.authToken) return null;
 
+  const ep = qoderEndpoints(providerOf(credentials));
   // Job-token traffic is rejected by api3 ("Login expired" 403) — the
-  // official qodercli serves it from api2 instead.
+  // official qodercli serves it from api2 instead. The China gateway serves
+  // both dt- and jt- tokens from the same host, so chatBase === chatBaseAlt.
   const modelListUrl = String(creds.authToken).startsWith("jt-")
-    ? `${QODER_CHAT_BASE_ALT}/algo/api/v2/model/list`
-    : QODER_MODEL_LIST_URL;
+    ? `${ep.chatBaseAlt}/algo/api/v2/model/list`
+    : ep.modelListUrl;
 
   const headers = {
     Accept: "application/json",

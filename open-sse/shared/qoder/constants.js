@@ -17,25 +17,11 @@ export const QODER_CHAT_BASE_ALT = "https://api2.qoder.sh";
 
 export const QODER_LOGIN_URL = "https://qoder.com/device/selectAccounts";
 
-// Qoder CN (China) endpoints
-export const QODER_CN_OPENAPI_BASE = "https://openapi.qoder.com.cn";
-export const QODER_CN_CHAT_BASE = "https://gateway.qoder.com.cn";
-export const QODER_CN_LOGIN_URL = "https://qoder.cn/device/selectAccounts";
-
 // Device flow endpoints
 export const QODER_DEVICE_TOKEN_URL = `${QODER_OPENAPI_BASE}/api/v1/deviceToken/poll`;
 export const QODER_USERINFO_URL = `${QODER_OPENAPI_BASE}/api/v1/userinfo`;
 export const QODER_QUOTA_USAGE_URL = `${QODER_OPENAPI_BASE}/api/v2/quota/usage`;
 export const QODER_REFRESH_TOKEN_URL = `${QODER_CENTER_BASE}/algo/api/v3/user/refresh_token`;
-
-// Qoder CN Device flow endpoints
-export const QODER_CN_DEVICE_TOKEN_URL = `${QODER_CN_OPENAPI_BASE}/api/v1/deviceToken/poll`;
-export const QODER_CN_USERINFO_URL = `${QODER_CN_OPENAPI_BASE}/api/v1/userinfo`;
-export const QODER_CN_QUOTA_USAGE_URL = `${QODER_CN_OPENAPI_BASE}/api/v2/quota/usage`;
-export const QODER_CN_JOB_TOKEN_EXCHANGE_URL = `${QODER_CN_OPENAPI_BASE}/api/v1/jobToken/exchange`;
-export const QODER_CN_CHAT_URL = `${QODER_CN_CHAT_BASE}/algo${QODER_CHAT_SIG_PATH}?FetchKeys=llm_model_result&AgentId=agent_common`;
-export const QODER_CN_CHAT_URL_ENCODED = `${QODER_CN_CHAT_URL}&Encode=1`;
-export const QODER_CN_MODEL_LIST_URL = `${QODER_CN_CHAT_BASE}/algo/api/v2/model/list`;
 
 // PAT (Personal Access Token, pt-...) → short-lived job token (jt-...) exchange.
 // PATs cannot sign COSY requests directly — they must be exchanged first.
@@ -50,6 +36,64 @@ export const QODER_MODEL_LIST_URL = `${QODER_CHAT_BASE}/algo/api/v2/model/list`;
 // Official qodercli uploads images here (COSY-signed PUT multipart, field "file")
 // instead of inlining base64 into agent_chat_generation.
 export const QODER_IMAGE_UPLOAD_SIG_PATH = "/api/v2/image/upload";
+
+// ── Qoder CN (qoder.cn) ──────────────────────────────────────────────
+// Declared AFTER QODER_CHAT_SIG_PATH on purpose: const bindings are in the
+// temporal dead zone until initialised, so referencing the sig path above its
+// declaration throws `Cannot access 'QODER_CHAT_SIG_PATH' before initialization`
+// at module load — which took the whole module (and every Qoder route) down.
+export const QODER_CN_OPENAPI_BASE = "https://openapi.qoder.com.cn";
+export const QODER_CN_CHAT_BASE = "https://gateway.qoder.com.cn";
+export const QODER_CN_LOGIN_URL = "https://qoder.cn/device/selectAccounts";
+export const QODER_CN_DEVICE_TOKEN_URL = `${QODER_CN_OPENAPI_BASE}/api/v1/deviceToken/poll`;
+export const QODER_CN_USERINFO_URL = `${QODER_CN_OPENAPI_BASE}/api/v1/userinfo`;
+export const QODER_CN_QUOTA_USAGE_URL = `${QODER_CN_OPENAPI_BASE}/api/v2/quota/usage`;
+export const QODER_CN_JOB_TOKEN_EXCHANGE_URL = `${QODER_CN_OPENAPI_BASE}/api/v1/jobToken/exchange`;
+export const QODER_CN_CHAT_URL = `${QODER_CN_CHAT_BASE}/algo${QODER_CHAT_SIG_PATH}?FetchKeys=llm_model_result&AgentId=agent_common`;
+export const QODER_CN_CHAT_URL_ENCODED = `${QODER_CN_CHAT_URL}&Encode=1`;
+export const QODER_CN_MODEL_LIST_URL = `${QODER_CN_CHAT_BASE}/algo/api/v2/model/list`;
+
+/**
+ * Endpoint bundle per Qoder variant. `qoderModels.js` and the executor pick
+ * their URLs from here so a single code path serves both the international
+ * (qoder.sh) and China (qoder.com.cn) deployments — they share the COSY
+ * signing scheme but not a single hostname.
+ */
+export const QODER_ENDPOINTS = Object.freeze({
+  qoder: Object.freeze({
+    openApiBase: QODER_OPENAPI_BASE,
+    centerBase: QODER_CENTER_BASE,
+    chatBase: QODER_CHAT_BASE,
+    chatBaseAlt: QODER_CHAT_BASE_ALT,
+    loginUrl: QODER_LOGIN_URL,
+    deviceTokenUrl: QODER_DEVICE_TOKEN_URL,
+    userInfoUrl: QODER_USERINFO_URL,
+    quotaUsageUrl: QODER_QUOTA_USAGE_URL,
+    refreshUrl: QODER_REFRESH_TOKEN_URL,
+    jobTokenExchangeUrl: QODER_JOB_TOKEN_EXCHANGE_URL,
+    modelListUrl: QODER_MODEL_LIST_URL,
+    chatSigPath: QODER_CHAT_SIG_PATH,
+  }),
+  "qoder-cn": Object.freeze({
+    openApiBase: QODER_CN_OPENAPI_BASE,
+    centerBase: QODER_CN_OPENAPI_BASE,
+    chatBase: QODER_CN_CHAT_BASE,
+    chatBaseAlt: QODER_CN_CHAT_BASE,
+    loginUrl: QODER_CN_LOGIN_URL,
+    deviceTokenUrl: QODER_CN_DEVICE_TOKEN_URL,
+    userInfoUrl: QODER_CN_USERINFO_URL,
+    quotaUsageUrl: QODER_CN_QUOTA_USAGE_URL,
+    refreshUrl: QODER_CN_DEVICE_TOKEN_URL,
+    jobTokenExchangeUrl: QODER_CN_JOB_TOKEN_EXCHANGE_URL,
+    modelListUrl: QODER_CN_MODEL_LIST_URL,
+    chatSigPath: QODER_CHAT_SIG_PATH,
+  }),
+});
+
+/** Resolve the endpoint bundle for a provider id (defaults to international). */
+export function qoderEndpoints(provider) {
+  return QODER_ENDPOINTS[provider] || QODER_ENDPOINTS.qoder;
+}
 
 // Drop remaining inlined binaries if the Qoder JSON body would still exceed this.
 // 30MB+ payloads are what blow past Claude-Code's ~200k context on the wire.

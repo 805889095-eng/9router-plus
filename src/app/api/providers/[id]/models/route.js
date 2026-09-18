@@ -367,6 +367,7 @@ const PROVIDER_MODELS_CONFIG = {
   qoder: {
     customResolver: async (connection) => {
       const credentials = {
+        provider: "qoder",
         accessToken: connection.accessToken,
         apiKey: connection.apiKey,
         refreshToken: connection.refreshToken,
@@ -403,6 +404,7 @@ const PROVIDER_MODELS_CONFIG = {
   "qoder-cn": {
     customResolver: async (connection) => {
       const credentials = {
+        provider: "qoder-cn",
         accessToken: connection.accessToken,
         apiKey: connection.apiKey,
         refreshToken: connection.refreshToken,
